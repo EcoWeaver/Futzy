@@ -307,6 +307,10 @@ server <- function(input, output, session) {
       } else {
         edge_lab <- paste("decreases (", input$coef, ")", sep="")
       }
+      pal <- colorRamp(c("red", "white", "green"))
+      edge_color <- rgb(pal((input$coef + 1)*0.5), maxColorValue = 255) 
+      edge_width <- abs(input$coef)*0.5*5
+      
       #check if this node already exists in either direction
       chk <- merge(data.frame("from" = from_node$id, "to" = to_node$id), g$edges_df)
       chk_inv <- merge(data.frame("from" = to_node$id, "to" = from_node$id), g$edges_df)
@@ -316,7 +320,7 @@ server <- function(input, output, session) {
         g <- delete_edge (g, from = chk_inv$from, to = chk_inv$to)
       }
       
-      g <- add_edge(g, from = from_node$id, to = to_node$id, edge_aes = edge_aes(label = edge_lab), edge_data = edge_data(coef = input$coef))
+      g <- add_edge(g, from = from_node$id, to = to_node$id, edge_aes = edge_aes(label = edge_lab, color = edge_color, penwidth = edge_width), edge_data = edge_data(coef = input$coef))
       
       # Add edge
       
@@ -415,9 +419,6 @@ server <- function(input, output, session) {
     g <- graph()
     if (count_nodes(g) > 0) {
       #Eventually this should be moved to the edge creation space
-      pal <- colorRamp(c("red", "white", "green"))
-      g$edges_df$color <- rgb(pal((g$edges_df$coef + 1)*0.5), maxColorValue = 255) #This almost works
-      g$edges_df$width <- abs(g$edges_df$coef)*0.5*5
       visNetwork(g$nodes_df, g$edges_df) %>%
         visEdges(arrows = "to") %>%
         visIgraphLayout(layout = "layout_on_grid") %>%
@@ -453,3 +454,4 @@ server <- function(input, output, session) {
   
 }
 
+shinyApp(ui = ui, server = server)
