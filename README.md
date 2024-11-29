@@ -15,7 +15,7 @@ Required packages:
 - reshape2
 - ggplot2
 
-Download both R files and run them using (RStudio)[https://posit.co/download/rstudio-desktop/].
+Download both R files and run them using [RStudio](https://posit.co/download/rstudio-desktop/).
 
 ## A Short Reading List
 - [Fuzzy cognitive mapping as a tool to assess the relative cumulative effects of environmental stressors on an Arctic seabird population to identify conservation action and research priorities](https://besjournals.onlinelibrary.wiley.com/doi/10.1002/2688-8319.12241) - Rooney et al. 2023
