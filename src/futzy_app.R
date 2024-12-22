@@ -40,16 +40,16 @@ ui <- navbarPage("Futzy",
                           column(width = 8,
                                  card( 
                                    card_header("Model preview"),
-                                   visNetworkOutput("diagram"),
+                                   visNetworkOutput("diagram")
                                  ),
                                  card(card_header("Node and edge details"),
-                                      htmlOutput("selectedNode")
-                                      #actionButton("delete", "Delete node", disabled = TRUE))
+                                      htmlOutput("selectedNode"),
+                                      actionButton("delete", "Delete node", disabled = TRUE))
                                  )
                           )
-                          )
-                          )  
-                 ),
+                      )
+                  ),
+                 
                  ###Model options tab----
                  tabPanel("Model options",
                           sidebarLayout(
@@ -75,6 +75,10 @@ ui <- navbarPage("Futzy",
                                 plotOutput("modelPlot"),
                                 tableOutput("modelSteps"),
                                 tableOutput("modelStats")
+                              ),
+                              card(
+                                card_header("Graph statistics"),
+                                tableOutput("graphStats")
                               )
                               #Graph statistics card somewhere in here
                             )
@@ -243,8 +247,15 @@ server <- function(input, output, session) {
   adj <- reactiveVal(data.frame())
   avec <- reactiveVal(data.frame())
   model <- reactiveVal(data.frame())
-  selectednode <- reactiveVal(integer())
+  selectednode <- reactiveVal("none")
   t_st <- reactiveVal(1)
+  
+  observeEvent(selectednode(), {
+    if (selectednode() == "none") {
+      output$selectedNode <- renderUI("none")
+    }
+      
+  })
   
   ###File input function----
   observeEvent(input$file1, { 
@@ -377,39 +388,48 @@ server <- function(input, output, session) {
     output$modelPlot <- renderPlot({ggplot(data=df2,
                                            aes(x=iterations, y=value, group=variable, colour=variable)) +
         theme_bw() + geom_line() + geom_point(size = 2) })
+    
+    #graph stats go here:
+    
   })
   
   
   
   ###Click event----
-  observeEvent(input$click, {
-    g <- graph()
-    selectednode <- input$click
-    node <- g$nodes_df[input$click, ]
-    text <- paste("Selected node: ", node$label, "<br/>")
+  observe({
+    if (!is.null(input$node_selected) && input$node_selected == 1) {
+      g <- graph()
+      selectednode(input$click)
+      
+      node <- g$nodes_df[input$click, ]
     
-    text <- paste(text, "<br/>Influences:")
-    edges_out <- g$edges_df[g$edges_df$from == input$click, ]
-    edges_out <- g$nodes_df$label[edges_out$to]
-    edges_out <- paste(edges_out, collapse = ", ")
-    text <- paste(text, edges_out)
+      text <- paste("Selected node: ", node$label, "<br/>")
+      text <- paste(text, "<br/>Influences:")
+      edges_out <- g$edges_df[g$edges_df$from == input$click, ]
+      edges_out <- g$nodes_df$label[edges_out$to]
+      edges_out <- paste(edges_out, collapse = ", ")
+      text <- paste(text, edges_out)
+      text <- paste(text, "<br/><br/>Influenced by:")
+      edges_in <- g$edges_df[g$edges_df$to == input$click, ]
+      edges_in <- g$nodes_df$label[edges_in$from]
+      edges_in <- paste(edges_in, collapse = ", ")
+      text <- paste(text, edges_in)
     
-    text <- paste(text, "<br/><br/>Influenced by:")
-    edges_in <- g$edges_df[g$edges_df$to == input$click, ]
-    edges_in <- g$nodes_df$label[edges_in$from]
-    edges_in <- paste(edges_in, collapse = ", ")
-    text <- paste(text, edges_in)
-    
-    #updateActionButton(session, "delete", disabled = FALSE)
-    output$selectedNode <- renderUI({HTML(paste(text))
-    })
+      updateActionButton(session, "delete", disabled = FALSE)
+      output$selectedNode <- renderUI({HTML(paste(text))})
+    } else {
+      selectednode("none")
+    }
   })
   
   ###Delete node ----
   observeEvent(input$delete, {
     s <- selectednode()
     g <- graph()
-    visRemoveNodes(g, s)
+    p <- visNetworkProxy(g, session)
+    visRemoveNodes(p, s)
+    selectednode("none")
+    graph(p)
   })
   
   
@@ -426,6 +446,7 @@ server <- function(input, output, session) {
         visInteraction(selectConnectedEdges = FALSE) %>%
         visEvents(click = "function(nodes){
                   Shiny.onInputChange('click', nodes.nodes[0]);
+                  Shiny.onInputChange('node_selected', nodes.nodes.length);
                   ;}")
     }
   })
