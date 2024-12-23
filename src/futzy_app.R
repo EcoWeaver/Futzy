@@ -390,7 +390,15 @@ server <- function(input, output, session) {
         theme_bw() + geom_line() + geom_point(size = 2) })
     
     #graph stats go here:
+    g <- to_igraph(graph())
+    in_d <- degree(g, mode = "in")
+    out_d <- degree(g, mode = "out")
+    btwn <- betweenness(g)
     
+    stats <- data.frame(In_Degree = in_d, 
+                        Out_Degree = out_d,
+                        betweenness = btwn)
+    output$graphStats <- renderTable(stats, rownames = TRUE)
   })
   
   
